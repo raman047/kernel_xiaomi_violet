@@ -45,7 +45,6 @@ static struct proc_dir_entry *NVT_proc_fw_version_entry;
 static struct proc_dir_entry *NVT_proc_baseline_entry;
 static struct proc_dir_entry *NVT_proc_raw_entry;
 static struct proc_dir_entry *NVT_proc_diff_entry;
-extern char g_lcd_id[128];
 static uint8_t tp_maker_cg_lamination = 0;
 static uint8_t display_maker = 0;
 static uint8_t cg_ink_color = 0;
@@ -556,12 +555,11 @@ int lct_nvt_tp_info_node_init(void)
     char tp_lockdown_info_buf[64];
     nvt_get_xiaomi_lockdown_info();
     memset(tp_info_buf, 0, sizeof(tp_info_buf));
-    if (IS_ERR_OR_NULL(g_lcd_id)){
-        NVT_ERR("g_lcd_id is ERROR!\n");
-        goto tp_node_init;
-    } else {
-        LOGV("LCM information : %s\n", g_lcd_id);
-        if (strstr(g_lcd_id,"nt36672a video mode dsi shenchao panel") != NULL) {
+	if (IS_ERR_OR_NULL(saved_command_line)){
+		NVT_ERR("saved_command_line is ERROR!\n");
+	goto tp_node_init;
+	} else {
+		if (strstr(saved_command_line,"shenchao") != NULL) {
 			if (reservation_byte == 0x00) {
 				ts->touch_vendor_id = TP_VENDOR_EBBG;
 				sprintf(tp_info_buf, "[Vendor]shenchao,[FW]0x%02x,[IC]nt36672a\n", ts->fw_ver);
@@ -571,14 +569,11 @@ int lct_nvt_tp_info_node_init(void)
 				sprintf(tp_info_buf, "[Vendor]shenchao_2nd,[FW]0x%02x,[IC]nt36672a\n", ts->fw_ver);
 			}
 			goto tp_node_init;
-        } else if (strstr(g_lcd_id,"nt36672a video mode dsi tianma panel") != NULL) {
-			sprintf(tp_info_buf, "[Vendor]tianma,[FW]0x%02x,[IC]nt36672a\n", ts->fw_ver);
-			goto tp_node_init;
 		} else {
 			init_lct_tp_info(NULL, NULL);
 			return -ENODEV;
-        }
-    }
+		}
+	}
 tp_node_init:
     sprintf(tp_lockdown_info_buf, "%02X%02X%02X%02X%04X%02X%02X\n", tp_maker_cg_lamination, display_maker, cg_ink_color, hw_version, project_id, cg_maker, reservation_byte);
     init_lct_tp_info(tp_info_buf, tp_lockdown_info_buf);

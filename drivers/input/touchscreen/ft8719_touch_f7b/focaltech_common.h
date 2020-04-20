@@ -35,9 +35,6 @@
 #include "focaltech_config.h"
 #include "../lct_tp_info.h"     /* modify by zhangchaofan, 2018-11-27 */
 #include "../lct_ctp_selftest.h"	/* add fts tp selftest by zhangchaofan end, 2018-11-30*/
-/* add verify LCD by zhangchaofan start, 2018-11-20*/
-extern char g_lcd_id[128];
-/* add verify LCD by zhangchaofan end, 2018-11-20*/
 /* add touchpad information by zhangchaofan start, 2018-11-27*/
 extern int lct_fts_tp_info_node_init(void);
 /* add touchpad information by zhangchaofan end, 2018-11-27*/
