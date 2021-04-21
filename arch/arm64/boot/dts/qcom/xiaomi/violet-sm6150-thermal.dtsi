@@ -56,6 +56,18 @@
         status = "disabled";
     };
 
+    pm6150-vbat-lvl0 {
+        status = "disabled";
+    };
+
+    pm6150-vbat-lvl1 {
+        status = "disabled";
+    };
+
+    pm6150-vbat-lvl2 {
+        status = "disabled";
+    };
+
     lmh-dcvs-00 {
         status = "disabled";
     };
