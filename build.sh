@@ -3,11 +3,11 @@
 kernel_dir="${PWD}"
 CCACHE=$(command -v ccache)
 objdir="${kernel_dir}/out"
-anykernel=$HOME/kernel/xiaomi/anykernel
+anykernel=$HOME/anykernel
 builddir="${kernel_dir}/build"
 ZIMAGE=$kernel_dir/out/arch/arm64/boot/Image.gz-dtb
 kernel_name="Litten-Violet"
-zip_name="$kernel_name-$(date +"%d%m%Y").zip"
+zip_name="$kernel_name-$(date +"%d%m%Y-%H%M").zip"
 TC_DIR=$HOME/tc/proton-clang
 export CONFIG_FILE="violet_defconfig"
 export ARCH="arm64"
