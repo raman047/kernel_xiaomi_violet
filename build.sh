@@ -74,11 +74,11 @@ completion()
 	rm -rf $anykernel
         END=$(date +"%s")
         DIFF=$(($END - $START))
+	curl bashupload.com -T $HOME/$zip_name
+	curl --upload-file $HOME/$zip_name http://transfer.sh/$zip_name
 		echo -e ${LGR} "############################################"
 		echo -e ${LGR} "############# OkThisIsEpic!  ##############"
 		echo -e ${LGR} "############################################${NC}"
-	curl bashupload.com -T $HOME/$zip_name
-	curl --upload-file $HOME/$zip_name http://transfer.sh/$zip_name
 	else
 		echo -e ${RED} "############################################"
 		echo -e ${RED} "##         This Is Not Epic :'(           ##"
