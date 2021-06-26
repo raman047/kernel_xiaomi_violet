@@ -1365,6 +1365,12 @@ static int nvt_set_cur_value(int nvt_mode, int nvt_value)
 	uint8_t reg_value = 0;
 	uint8_t ret = 0;
 
+	if (nvt_mode == Touch_Doubletap_Mode && ts && nvt_value >= 0) {
+		ts->double_wakeup = nvt_value;
+		ts->enable_gesture_mode = ts->double_wakeup;
+		return 0;
+	}
+
 	if (bTouchIsAwake) {
 
 
