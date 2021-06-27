@@ -113,49 +113,8 @@ const uint16_t touch_key_array[TOUCH_KEY_NUM] = {
 
 /* modify begin by zhangchaofan for tp gesture, 2018-10-24 */
 #if WAKEUP_GESTURE
-const uint16_t gesture_key_array[] = {
-	KEY_WAKEUP,  //GESTURE_WORD_C
-	KEY_WAKEUP,  //GESTURE_WORD_W
-	KEY_WAKEUP,  //GESTURE_WORD_V
-	KEY_WAKEUP,  //GESTURE_DOUBLE_CLICK
-	KEY_WAKEUP,  //GESTURE_WORD_Z
-	KEY_WAKEUP,  //GESTURE_WORD_M
-	KEY_WAKEUP,  //GESTURE_WORD_O
-	KEY_WAKEUP,  //GESTURE_WORD_e
-	KEY_WAKEUP,  //GESTURE_WORD_S
-	KEY_WAKEUP,  //GESTURE_SLIDE_UP
-	KEY_WAKEUP,  //GESTURE_SLIDE_DOWN
-	KEY_WAKEUP,  //GESTURE_SLIDE_LEFT
-	KEY_WAKEUP,  //GESTURE_SLIDE_RIGHT
-};
-bool enable_gesture_mode = false; // for gesture
-EXPORT_SYMBOL(enable_gesture_mode);
 bool delay_gesture = false;
 bool suspend_state = false;
-#define WAKEUP_OFF 4
-#define WAKEUP_ON 5
-int nvt_gesture_switch(struct input_dev *dev, unsigned int type, unsigned int code, int value)
-{
-	if (type == EV_SYN && code == SYN_CONFIG)
-	{
-		if (suspend_state)
-		{
-			if ((value != WAKEUP_OFF) || enable_gesture_mode)
-			{
-				delay_gesture = true;
-			}
-		}
-		NVT_LOG("choose the gesture mode yes or not\n");
-		if(value == WAKEUP_OFF){
-			NVT_LOG("disable gesture mode\n");
-			enable_gesture_mode = false;
-		}else if(value == WAKEUP_ON){
-			NVT_LOG("enable gesture mode\n");
-			enable_gesture_mode  = true;
-		}
-	}
-	return 0;
-}
 #endif
 /* modify end by zhangchaofan for tp gesture, 2018-10-24 */
 
@@ -652,116 +611,6 @@ static int32_t nvt_flash_proc_init(void)
 	NVT_LOG("============================================================\n");
 
 	return 0;
-}
-#endif
-
-#if WAKEUP_GESTURE
-#define GESTURE_WORD_C          12
-#define GESTURE_WORD_W          13
-#define GESTURE_WORD_V          14
-#define GESTURE_DOUBLE_CLICK    15
-#define GESTURE_WORD_Z          16
-#define GESTURE_WORD_M          17
-#define GESTURE_WORD_O          18
-#define GESTURE_WORD_e          19
-#define GESTURE_WORD_S          20
-#define GESTURE_SLIDE_UP        21
-#define GESTURE_SLIDE_DOWN      22
-#define GESTURE_SLIDE_LEFT      23
-#define GESTURE_SLIDE_RIGHT     24
-/* customized gesture id */
-#define DATA_PROTOCOL           30
-
-/* function page definition */
-#define FUNCPAGE_GESTURE         1
-
-static struct wakeup_source gestrue_wakelock;		//add by zhangchaofan for tp_gesture, 2018-10-24
-/*******************************************************
-Description:
-	Novatek touchscreen wake up gesture key report function.
-
-return:
-	n.a.
-*******************************************************/
-void nvt_ts_wakeup_gesture_report(uint8_t gesture_id, uint8_t *data)
-{
-	uint32_t keycode = 0;
-	uint8_t func_type = data[2];
-	uint8_t func_id = data[3];
-
-	/* support fw specifal data protocol */
-	if ((gesture_id == DATA_PROTOCOL) && (func_type == FUNCPAGE_GESTURE)) {
-		gesture_id = func_id;
-	} else if (gesture_id > DATA_PROTOCOL) {
-		NVT_ERR("gesture_id %d is invalid, func_type=%d, func_id=%d\n", gesture_id, func_type, func_id);
-		return;
-	}
-
-	NVT_LOG("gesture_id = %d\n", gesture_id);
-
-	switch (gesture_id) {
-		case GESTURE_WORD_C:
-			NVT_LOG("Gesture : Word-C.\n");
-			keycode = gesture_key_array[0];
-			break;
-		case GESTURE_WORD_W:
-			NVT_LOG("Gesture : Word-W.\n");
-			keycode = gesture_key_array[1];
-			break;
-		case GESTURE_WORD_V:
-			NVT_LOG("Gesture : Word-V.\n");
-			keycode = gesture_key_array[2];
-			break;
-		case GESTURE_DOUBLE_CLICK:
-			NVT_LOG("Gesture : Double Click.\n");
-			keycode = gesture_key_array[3];
-			break;
-		case GESTURE_WORD_Z:
-			NVT_LOG("Gesture : Word-Z.\n");
-			keycode = gesture_key_array[4];
-			break;
-		case GESTURE_WORD_M:
-			NVT_LOG("Gesture : Word-M.\n");
-			keycode = gesture_key_array[5];
-			break;
-		case GESTURE_WORD_O:
-			NVT_LOG("Gesture : Word-O.\n");
-			keycode = gesture_key_array[6];
-			break;
-		case GESTURE_WORD_e:
-			NVT_LOG("Gesture : Word-e.\n");
-			keycode = gesture_key_array[7];
-			break;
-		case GESTURE_WORD_S:
-			NVT_LOG("Gesture : Word-S.\n");
-			keycode = gesture_key_array[8];
-			break;
-		case GESTURE_SLIDE_UP:
-			NVT_LOG("Gesture : Slide UP.\n");
-			keycode = gesture_key_array[9];
-			break;
-		case GESTURE_SLIDE_DOWN:
-			NVT_LOG("Gesture : Slide DOWN.\n");
-			keycode = gesture_key_array[10];
-			break;
-		case GESTURE_SLIDE_LEFT:
-			NVT_LOG("Gesture : Slide LEFT.\n");
-			keycode = gesture_key_array[11];
-			break;
-		case GESTURE_SLIDE_RIGHT:
-			NVT_LOG("Gesture : Slide RIGHT.\n");
-			keycode = gesture_key_array[12];
-			break;
-		default:
-			break;
-	}
-
-	if (keycode > 0) {
-		input_report_key(ts->input_dev, keycode, 1);
-		input_sync(ts->input_dev);
-		input_report_key(ts->input_dev, keycode, 0);
-		input_sync(ts->input_dev);
-	}
 }
 #endif
 
@@ -1677,16 +1526,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 		input_set_capability(ts->input_dev, EV_KEY, touch_key_array[retry]);
 	}
 #endif
-
-/* modify begin by zhangchaofan for gesture, 2018-10-24 */
-#if WAKEUP_GESTURE
-	ts->input_dev->event =nvt_gesture_switch;
-	for (retry = 0; retry < (sizeof(gesture_key_array) / sizeof(gesture_key_array[0])); retry++) {
-		input_set_capability(ts->input_dev, EV_KEY, gesture_key_array[retry]);
-	}
-	wakeup_source_init(&gestrue_wakelock, "gestrue_wakelock");
-#endif
-/* modify end by zhangchaofan for gesture, 2018-10-24 */
 
 	sprintf(ts->phys, "input/ts");
 	ts->input_dev->name = NVT_TS_NAME;
