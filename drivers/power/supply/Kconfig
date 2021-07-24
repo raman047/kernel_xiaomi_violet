@@ -617,7 +617,15 @@ config K6_CHARGE
 	  Say Y to enable Xiaomi Redmi Note 10 Pro (K6/sweet) specific
 	  modifications.
 
+config F7B_CHARGE
+	bool
+	help
+	default n
+	  Say Y to enable Xiaomi Redmi Note 7 Pro (F7B/violet) specific
+	  modification
+
 source "drivers/power/supply/qcom/Kconfig"
+source "drivers/power/supply/qcom_f7b/Kconfig"
 source "drivers/power/supply/maxim/Kconfig"
 source "drivers/power/supply/ti/Kconfig"
 
