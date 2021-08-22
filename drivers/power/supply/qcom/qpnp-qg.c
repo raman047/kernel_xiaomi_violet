@@ -11,8 +11,6 @@
  * GNU General Public License for more details.
  */
 
-#define pr_fmt(fmt)	"QG-K: %s: " fmt, __func__
-
 #include <linux/alarmtimer.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
