@@ -1977,6 +1977,17 @@ static int32_t __init nvt_driver_init(void)
 	int32_t ret = 0;
 
 	NVT_LOG("start\n");
+
+	if (strstr(saved_command_line, "shenchao")) {
+		NVT_LOG("TP info: [Vendor]shenchao [IC]nt36672a\n");
+	} else if (strstr(saved_command_line, "tianma")) {
+		NVT_ERR("LCM is right! [Vendor]tianma [IC]ft8719\n");
+		goto err_lcd;
+	} else {
+		NVT_ERR("Unknow Touch\n");
+		goto err_driver;
+	}
+
 	//---add i2c driver---
 	ret = i2c_add_driver(&nvt_i2c_driver);
 	if (ret) {
@@ -1985,7 +1996,8 @@ static int32_t __init nvt_driver_init(void)
 	}
 
 	NVT_LOG("finished\n");
-
+err_lcd:
+    ret = -ENODEV;
 err_driver:
 	return ret;
 }
