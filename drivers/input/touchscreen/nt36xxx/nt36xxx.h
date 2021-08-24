@@ -83,8 +83,12 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
 #if WAKEUP_GESTURE
 extern const uint16_t gesture_key_array[];
 #endif
+#define TP_VENDOR_EBBG      0x01
+#define TP_VENDOR_EBBG_2ND  0x02
 #define BOOT_UPDATE_FIRMWARE 1
-#define BOOT_UPDATE_FIRMWARE_NAME "novatek_ts_fw.bin"
+#define BOOT_UPDATE_FIRMWARE_NAME_TIANMA "novatek/tianma_nt36672a_miui_f7b.bin"
+#define BOOT_UPDATE_FIRMWARE_NAME_SHENCHAO "novatek/shenchao_nt36672a_miui_f7b.bin"
+#define BOOT_UPDATE_FIRMWARE_NAME_SHENCHAO_2ND "novatek/shenchao_2nd_nt36672a_miui_f7b.bin"
 
 //---ESD Protect.---
 #define NVT_TOUCH_ESD_PROTECT 0
