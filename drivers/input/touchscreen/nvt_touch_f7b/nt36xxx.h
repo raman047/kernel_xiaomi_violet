@@ -1,9 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
 /*
- * Copyright (C) 2010 - 2017 Novatek, Inc.
- * Copyright (C) 2021 XiaoMi, Inc.
+ * Copyright (C) 2010 - 2018 Novatek, Inc.
  *
- * $Revision: 33334 $
- * $Date: 2018-09-04 19:17:10 +0800 (週二, 04 九月 2018) $
+ * $Revision: 47247 $
+ * $Date: 2019-07-10 10:41:36 +0800 (Wed, 10 Jul 2019) $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,17 +19,20 @@
 #ifndef 	_LINUX_NVT_TOUCH_H
 #define		_LINUX_NVT_TOUCH_H
 
+#include <linux/delay.h>
 #include <linux/i2c.h>
 #include <linux/input.h>
-#include <linux/regulator/consumer.h>
+#include <linux/uaccess.h>
+#include <linux/haven/hh_irq_lend.h>
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #endif
 
+#include "../lct_tp_info.h"
 #include "nt36xxx_mem_map.h"
 
-#include "../lct_tp_info.h"
-#define NVT_DEBUG 0
+#define NVT_DEBUG 1
 
 //---GPIO number---
 #define NVTTOUCH_RST_PIN 88
@@ -51,17 +54,9 @@
 #if NVT_DEBUG
 #define NVT_LOG(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
 #else
-#define NVT_LOG(fmt, args...)    pr_debug("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+#define NVT_LOG(fmt, args...)    pr_info("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
 #endif
 #define NVT_ERR(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
-/* add begin by zhangchaofan for LOGV log, 2018-09-06*/
-#if 1
-#define LOGV(log, ...) \
-        printk("[%s] %s (line %d): " log, NVT_I2C_NAME, __func__, __LINE__, ##__VA_ARGS__)
-#else
-#define LOGV(log, ...) {}
-#endif
-/* add end by zhangchaofan for LOGV log, 2018-09-06*/
 
 //---Input device info.---
 #define NVT_TS_NAME "NVTCapacitiveTouchScreen"
@@ -78,7 +73,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
 #define TOUCH_FORCE_NUM 1000
 
 /* Enable only when module have tp reset pin and connected to host */
-#define NVT_TOUCH_SUPPORT_HW_RST 0
+#define NVT_TOUCH_SUPPORT_HW_RST 1
 
 //---Customerized func.---
 #define NVT_TOUCH_PROC 1
@@ -89,50 +84,106 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
 #if WAKEUP_GESTURE
 extern const uint16_t gesture_key_array[];
 #endif
-/* add begin by zhangchaofan compatible to shenchao and tianma TP FW, 2018-09-18*/
 #define TP_VENDOR_EBBG      0x01
 #define TP_VENDOR_EBBG_2ND  0x02
 #define BOOT_UPDATE_FIRMWARE 1
 #define BOOT_UPDATE_FIRMWARE_NAME_TIANMA "novatek/tianma_nt36672a_miui_f7b.bin"
 #define BOOT_UPDATE_FIRMWARE_NAME_SHENCHAO "novatek/shenchao_nt36672a_miui_f7b.bin"
 #define BOOT_UPDATE_FIRMWARE_NAME_SHENCHAO_2ND "novatek/shenchao_2nd_nt36672a_miui_f7b.bin"
-/* add end by zhangchaofan compatible to shenchao and tianma TP FW, 2018-09-18 */
-
-#define NVT_REG_MONITOR_MODE 			0x7000
-#define NVT_REG_THDIFF				0x7100
-#define NVT_REG_SENSIVITY			0x7200
-#define NVT_REG_EDGE_FILTER_LEVEL		0xBA00
-#define NVT_REG_EDGE_FILTER_ORIENTATION		0xBC00
-
 
 //---ESD Protect.---
-#define NVT_TOUCH_ESD_PROTECT 1
+#define NVT_TOUCH_ESD_PROTECT 0
 #define NVT_TOUCH_ESD_CHECK_PERIOD 1500	/* ms */
 
-/* add begin by zhangchaofan@longcheer.com Touch state, 2018-12-12*/
 #define TOUCH_STATE_WORKING    0x00
 #define TOUCH_STATE_UPGRADING  0x01
-/* add end by zhangchaofan@longcheer.com Touch state, 2018-12-12 */
+
+enum trusted_touch_mode_config {
+	TRUSTED_TOUCH_VM_MODE,
+	TRUSTED_TOUCH_MODE_NONE
+};
+
+enum trusted_touch_pvm_states {
+	TRUSTED_TOUCH_PVM_INIT,
+	PVM_I2C_RESOURCE_ACQUIRED,
+	PVM_INTERRUPT_DISABLED,
+	PVM_IOMEM_LENT,
+	PVM_IOMEM_LENT_NOTIFIED,
+	PVM_IRQ_LENT,
+	PVM_IRQ_LENT_NOTIFIED,
+	PVM_IOMEM_RELEASE_NOTIFIED,
+	PVM_IRQ_RELEASE_NOTIFIED,
+	PVM_ALL_RESOURCES_RELEASE_NOTIFIED,
+	PVM_IRQ_RECLAIMED,
+	PVM_IOMEM_RECLAIMED,
+	PVM_INTERRUPT_ENABLED,
+	PVM_I2C_RESOURCE_RELEASED,
+	TRUSTED_TOUCH_PVM_STATE_MAX
+};
+
+enum trusted_touch_tvm_states {
+	TRUSTED_TOUCH_TVM_INIT,
+	TVM_IOMEM_LENT_NOTIFIED,
+	TVM_IRQ_LENT_NOTIFIED,
+	TVM_ALL_RESOURCES_LENT_NOTIFIED,
+	TVM_IOMEM_ACCEPTED,
+	TVM_I2C_SESSION_ACQUIRED,
+	TVM_IRQ_ACCEPTED,
+	TVM_INTERRUPT_ENABLED,
+	TVM_INTERRUPT_DISABLED,
+	TVM_IRQ_RELEASED,
+	TVM_I2C_SESSION_RELEASED,
+	TVM_IOMEM_RELEASED,
+	TRUSTED_TOUCH_TVM_STATE_MAX
+};
+
+#ifdef CONFIG_NOVATEK_TRUSTED_TOUCH
+#define TRUSTED_TOUCH_MEM_LABEL 0x7
+
+#define TRUSTED_TOUCH_EVENT_LEND_FAILURE -1
+#define TRUSTED_TOUCH_EVENT_LEND_NOTIFICATION_FAILURE -2
+#define TRUSTED_TOUCH_EVENT_ACCEPT_FAILURE -3
+#define	TRUSTED_TOUCH_EVENT_FUNCTIONAL_FAILURE -4
+#define	TRUSTED_TOUCH_EVENT_RELEASE_FAILURE -5
+#define	TRUSTED_TOUCH_EVENT_RECLAIM_FAILURE -6
+#define	TRUSTED_TOUCH_EVENT_NOTIFICATIONS_PENDING 5
+
+struct trusted_touch_vm_info {
+	enum hh_irq_label irq_label;
+	enum hh_vm_names vm_name;
+	u32 hw_irq;
+	hh_memparcel_handle_t vm_mem_handle;
+	u32 *iomem_bases;
+	u32 *iomem_sizes;
+	u32 iomem_list_size;
+	void *mem_cookie;
+#ifdef CONFIG_ARCH_QTI_VM
+	struct mutex tvm_state_mutex;
+	atomic_t tvm_state;
+#else
+	struct mutex pvm_state_mutex;
+	atomic_t pvm_state;
+#endif
+};
+#endif
 
 struct nvt_ts_data {
-	uint8_t touch_state;    /* modify by zhangchaofan@longcheer.com Touch state, 2018-12-12 */
+	uint8_t touch_state;
 	struct i2c_client *client;
 	struct input_dev *input_dev;
-	struct work_struct nvt_work;
+	struct device *dev;
 	struct delayed_work nvt_fwu_work;
 	uint16_t addr;
 	int8_t phys[32];
-#if defined(CONFIG_FB)
+	const struct i2c_device_id *id;
+#if defined(CONFIG_DRM_PANEL)
+	struct notifier_block drm_notif;
+#elif defined(CONFIG_FB)
 	struct notifier_block fb_notif;
-/* add begin by zhangchaofan@longcheer.com for resume delay, 2018-12-05*/
-    struct work_struct fb_notify_work;
-/* add end by zhangchaofan@longcheer.com for resume delay, 2018-12-05 */
-
+	struct work_struct fb_notify_work;
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
 #endif
-	struct regulator *vcc_i2c;
-	uint8_t touch_vendor_id;
 	uint8_t fw_ver;
 	uint8_t x_num;
 	uint8_t y_num;
@@ -146,20 +197,36 @@ struct nvt_ts_data {
 	int32_t reset_gpio;
 	uint32_t reset_flags;
 	struct mutex lock;
-	struct mutex pm_mutex;
 	const struct nvt_ts_mem_map *mmap;
 	uint8_t carrier_system;
 	uint16_t nvt_pid;
 	uint8_t xbuf[1025];
 	struct mutex xbuf_lock;
+	bool irq_enabled;
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-	u8 palm_sensor_switch;
-	bool palm_sensor_changed;
-	bool gamemode_enabled;
+        u8 palm_sensor_switch;
+        bool palm_sensor_changed;
+        bool gamemode_enabled;
 #endif
-	struct mutex reg_lock;
-	struct device *nvt_touch_dev;
-	struct class *nvt_tp_class;
+#ifdef CONFIG_NOVATEK_TRUSTED_TOUCH
+	struct trusted_touch_vm_info *vm_info;
+	struct mutex nvt_clk_io_ctrl_mutex;
+	const char *touch_environment;
+	struct completion trusted_touch_powerdown;
+	struct completion touch_suspend_resume;
+	struct completion trusted_touch_interrupt;
+	struct clk *core_clk;
+	struct clk *iface_clk;
+	atomic_t trusted_touch_initialized;
+	atomic_t trusted_touch_enabled;
+	atomic_t trusted_touch_underway;
+	atomic_t suspend_resume_underway;
+	atomic_t trusted_touch_event;
+	atomic_t trusted_touch_abort_status;
+	atomic_t delayed_vm_probe_pending;
+	atomic_t trusted_touch_mode;
+	atomic_t pvm_interrupt_underway;
+#endif
 };
 
 #if NVT_TOUCH_PROC
@@ -171,9 +238,9 @@ struct nvt_flash_data{
 
 typedef enum {
 	RESET_STATE_INIT = 0xA0,// IC reset
-	RESET_STATE_REK,		// ReK baseline
-	RESET_STATE_REK_FINISH,	// baseline is ready
-	RESET_STATE_NORMAL_RUN,	// normal run
+	RESET_STATE_REK,        // ReK baseline
+	RESET_STATE_REK_FINISH, // baseline is ready
+	RESET_STATE_NORMAL_RUN, // normal run
 	RESET_STATE_MAX  = 0xAF
 } RST_COMPLETE_STATE;
 
@@ -197,6 +264,7 @@ extern int32_t nvt_check_fw_reset_state(RST_COMPLETE_STATE check_reset_state);
 extern int32_t nvt_get_fw_info(void);
 extern int32_t nvt_clear_fw_status(void);
 extern int32_t nvt_check_fw_status(void);
+extern int32_t nvt_set_page(uint16_t i2c_addr, uint32_t addr);
 #if NVT_TOUCH_ESD_PROTECT
 extern void nvt_esd_check_enable(uint8_t enable);
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
